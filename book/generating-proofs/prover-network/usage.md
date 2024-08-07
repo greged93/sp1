@@ -8,16 +8,15 @@ To use the prover network to generate a proof, you can run your script that uses
 
 ```rust,noplayground
 // Generate the proof for the given program.
-let client = ProverClient::new();
+let prover = NetworkProver::new();
+let client = ProverClient::new(prover);
 let (pk, vk) = client.setup(ELF);
 let mut proof = client.prove(&pk, stdin).run().unwrap();
 ```
 
 ```sh
-SP1_PROVER=network SP1_PRIVATE_KEY=... RUST_LOG=info cargo run --release
+SP1_PRIVATE_KEY=... RUST_LOG=info cargo run --release
 ```
-
-- `SP1_PROVER` should be set to `network` when using the prover network.
 
 - `SP1_PRIVATE_KEY` should be set to your [private key](../prover-network.md#key-setup). You will need
   to be using a [whitelisted](../prover-network.md#get-access) key to use the network.
