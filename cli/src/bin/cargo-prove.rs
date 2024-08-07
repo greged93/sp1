@@ -17,10 +17,10 @@ pub enum Cargo {
 #[derive(clap::Args)]
 #[command(author, about, long_about = None, args_conflicts_with_subcommands = true, version = SP1_VERSION_MESSAGE)]
 pub struct ProveCli {
-    #[clap(subcommand)]
+    #[command(subcommand)]
     pub command: Option<ProveCliCommands>,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     pub prove: ProveCmd,
 }
 
