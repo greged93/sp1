@@ -27,7 +27,6 @@ use cfg_if::cfg_if;
 pub use proof::*;
 pub use provers::SP1VerificationError;
 use sp1_prover::components::DefaultProverComponents;
-use std::env;
 
 pub use provers::{LocalProver, MockProver, Prover};
 
@@ -45,54 +44,24 @@ pub struct ProverClient {
 }
 
 impl ProverClient {
-    /// Creates a new [ProverClient].
-    ///
-    /// Setting the `SP1_PROVER` enviroment variable can change the prover used under the hood.
-    /// - `local` (default): Uses [LocalProver]. Recommended for proving end-to-end locally.
-    /// - `mock`: Uses [MockProver]. Recommended for testing and development.
-    /// - `network`: Uses [NetworkProver]. Recommended for outsourcing proof generation to an RPC.
+    /// Creates a new [ProverClient] with the provided prover.
     ///
     /// ### Examples
     ///
     /// ```no_run
     /// use sp1_sdk::ProverClient;
+    /// use sp1_sdk::provers::MockProver;
     ///
-    /// std::env::set_var("SP1_PROVER", "local");
-    /// let client = ProverClient::new();
+    /// let prover = MockProver::new();
+    /// let client = ProverClient::new(prover);
     /// ```
-    pub fn new() -> Self {
-        match env::var("SP1_PROVER")
-            .unwrap_or("local".to_string())
-            .to_lowercase()
-            .as_str()
-        {
-            "mock" => Self {
-                prover: Box::new(MockProver::new()),
-            },
-            "local" => Self {
-                prover: Box::new(LocalProver::new()),
-            },
-            "network" => {
-                cfg_if! {
-                    if #[cfg(feature = "network")] {
-                        Self {
-                            prover: Box::new(NetworkProver::new()),
-                        }
-                    } else {
-                        panic!("network feature is not enabled")
-                    }
-                }
-            }
-            _ => panic!(
-                "invalid value for SP1_PROVER enviroment variable: expected 'local', 'mock', or 'network'"
-            ),
-        }
+    pub fn new<T: Prover<DefaultProverComponents> + 'static>(prover: T) -> Self {
+        Self { prover: Box::new(prover) }
     }
 
     /// Creates a new [ProverClient] with the mock prover.
     ///
-    /// Recommended for testing and development. You can also use [ProverClient::new] to set the
-    /// prover to `mock` with the `SP1_PROVER` enviroment variable.
+    /// Recommended for testing and development.
     ///
     /// ### Examples
     ///
@@ -109,8 +78,7 @@ impl ProverClient {
 
     /// Creates a new [ProverClient] with the local prover.
     ///
-    /// Recommended for proving end-to-end locally. You can also use [ProverClient::new] to set the
-    /// prover to `local` with the `SP1_PROVER` enviroment variable.
+    /// Recommended for proving end-to-end locally.
     ///
     /// ### Examples
     ///
@@ -127,8 +95,7 @@ impl ProverClient {
 
     /// Creates a new [ProverClient] with the network prover.
     ///
-    /// Recommended for outsourcing proof generation to an RPC. You can also use [ProverClient::new]
-    /// to set the prover to `network` with the `SP1_PROVER` enviroment variable.
+    /// Recommended for outsourcing proof generation to an RPC.
     ///
     /// ### Examples
     ///
@@ -159,12 +126,16 @@ impl ProverClient {
     /// ### Examples
     /// ```no_run
     /// use sp1_sdk::{ProverClient, SP1Stdin, SP1Context};
+    /// use sp1_sdk::provers::MockProver;
     ///
     /// // Load the program.
     /// let elf = include_bytes!("../../examples/fibonacci/program/elf/riscv32im-succinct-zkvm-elf");
     ///
+    /// // Initialize the prover.
+    /// let prover = MockProver::new();
+    ///
     /// // Initialize the prover client.
-    /// let client = ProverClient::new();
+    /// let client = ProverClient::new(prover);
     ///
     /// // Setup the inputs.
     /// let mut stdin = SP1Stdin::new();
@@ -189,12 +160,16 @@ impl ProverClient {
     /// ### Examples
     /// ```no_run
     /// use sp1_sdk::{ProverClient, SP1Stdin, SP1Context};
+    /// use sp1_sdk::provers::MockProver;
     ///
     /// // Load the program.
     /// let elf = include_bytes!("../../examples/fibonacci/program/elf/riscv32im-succinct-zkvm-elf");
     ///
+    /// // Initialize the prover.
+    /// let prover = MockProver::new();
+    ///
     /// // Initialize the prover client.
-    /// let client = ProverClient::new();
+    /// let client = ProverClient::new(prover);
     ///
     /// // Setup the program.
     /// let (pk, vk) = client.setup(elf);
@@ -216,9 +191,10 @@ impl ProverClient {
     /// ### Examples
     /// ```no_run
     /// use sp1_sdk::{ProverClient, SP1Stdin};
+    /// use sp1_sdk::provers::MockProver;
     ///
     /// let elf = include_bytes!("../../examples/fibonacci/program/elf/riscv32im-succinct-zkvm-elf");
-    /// let client = ProverClient::new();
+    /// let client = ProverClient::new(MockProver::new());
     /// let (pk, vk) = client.setup(elf);
     /// let mut stdin = SP1Stdin::new();
     /// stdin.write(&10usize);
@@ -249,21 +225,16 @@ impl ProverClient {
     /// ### Examples
     /// ```no_run
     /// use sp1_sdk::{ProverClient, SP1Stdin};
+    /// use sp1_sdk::provers::MockProver;
     ///
     /// let elf = include_bytes!("../../examples/fibonacci/program/elf/riscv32im-succinct-zkvm-elf");
-    /// let client = ProverClient::new();
+    /// let client = ProverClient::new(MockProver::new());
     /// let mut stdin = SP1Stdin::new();
     /// stdin.write(&10usize);
     /// let (pk, vk) = client.setup(elf);
     /// ```
     pub fn setup(&self, elf: &[u8]) -> (SP1ProvingKey, SP1VerifyingKey) {
         self.prover.setup(elf)
-    }
-}
-
-impl Default for ProverClient {
-    fn default() -> Self {
-        Self::new()
     }
 }
 

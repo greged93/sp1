@@ -1,13 +1,12 @@
 use anstyle::*;
 use anyhow::Result;
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use sp1_build::{build_program, BuildArgs};
 use sp1_core::utils::{setup_logger, setup_tracer};
 use sp1_prover::SP1Stdin;
-use sp1_sdk::ProverClient;
 use std::time::Instant;
 use std::{env, fs::File, io::Read, path::PathBuf, str::FromStr};
-
+use sp1_sdk::{ProverClient};
 use crate::util::{elapsed, write_status};
 
 #[derive(Debug, Clone)]
@@ -52,9 +51,22 @@ impl FromStr for Input {
     }
 }
 
+#[derive(Debug, Clone, ValueEnum)]
+pub enum Prover {
+    /// Local prover.
+    Local,
+    /// Mock provider limited to testing.
+    Mock,
+    /// Proving network.
+    Network,
+}
+
 #[derive(Parser)]
 #[command(name = "prove", about = "(default) Build and prove a program")]
 pub struct ProveCmd {
+    #[arg(long, value_enum)]
+    prover: Prover,
+
     #[clap(long, value_parser)]
     input: Option<Input>,
 
@@ -111,7 +123,11 @@ impl ProveCmd {
         }
 
         let start_time = Instant::now();
-        let client = ProverClient::new();
+        let client = match self.prover {
+            Prover::Local => ProverClient::local(),
+            Prover::Mock => ProverClient::mock(),
+            Prover::Network => ProverClient::network(),
+        };
         let (pk, _) = client.setup(&elf);
         let proof = client.prove(&pk, stdin).run().unwrap();
 
