@@ -17,9 +17,9 @@ use sp1_recursion_gnark_ffi::PlonkBn254Prover;
 use subtle_encoding::hex;
 
 #[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
+#[command(author, version, about, long_about = None)]
 struct Args {
-    #[clap(short, long)]
+    #[arg(short, long)]
     build_dir: String,
 }
 

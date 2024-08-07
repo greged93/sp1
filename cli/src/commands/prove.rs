@@ -55,19 +55,19 @@ impl FromStr for Input {
 #[derive(Parser)]
 #[command(name = "prove", about = "(default) Build and prove a program")]
 pub struct ProveCmd {
-    #[clap(long, value_parser)]
+    #[arg(long)]
     input: Option<Input>,
 
-    #[clap(long, action)]
+    #[arg(long)]
     output: Option<PathBuf>,
 
-    #[clap(long, action)]
+    #[arg(long)]
     profile: bool,
 
-    #[clap(long, action)]
+    #[arg(long)]
     verbose: bool,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     build_args: BuildArgs,
 }
 
